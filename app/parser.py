@@ -1,22 +1,16 @@
 import pandas as pd
-from typing import List
+from typing import Dict
+import os
 
 EXPECTED_STATES = ['Not recorded', 'Recorded', 'Cleaned']
 
 
-def read_data(files: List[str]) -> List[pd.DataFrame]:
-    dataframes = []
+def concat_tables(dataframes: Dict[str, pd.DataFrame]) -> pd.DataFrame:
+    dataframes = {os.path.splitext(key)[0]: value for key, value in dataframes.items()}
 
-    for file in files:
-        df = pd.read_csv(file)
-        df['table'] = file.split('.')[0]
-        dataframes.append(df)
+    dataframes = [df.assign(table=table_name) for table_name, df in dataframes.items()]
 
-    return dataframes
-
-
-def concat_tables(dataframes: List[pd.DataFrame]) -> pd.DataFrame:
-    all_data = pd.concat(dataframes)
+    all_data = pd.concat(dataframes, ignore_index=True)
 
     all_data['name'] = all_data['name'].apply(lambda x: 'EXTRA' if 'EXTRA' in x else x)
 
@@ -24,7 +18,7 @@ def concat_tables(dataframes: List[pd.DataFrame]) -> pd.DataFrame:
 
 
 def grouping_by_stat(all_data: pd.DataFrame) -> pd.DataFrame:
-    grouped_data = all_data.groupby(['name', 'table', 'status']).size().unstack(fill_value=0).reset_index()
+    grouped_data = all_data.groupby(['name', 'table', 'state']).size().unstack(fill_value=0).reset_index()
 
     for state in EXPECTED_STATES:
         if state not in grouped_data:
@@ -34,7 +28,7 @@ def grouping_by_stat(all_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def constrain_dashboard(grouped_data: pd.DataFrame) -> pd.DataFrame:
-    grouped_data['Total'] = grouped_data[['Not recorded', 'Recorded', 'Cleaned']].sum(axis=1)
+    grouped_data['Total'] = grouped_data[EXPECTED_STATES].sum(axis=1)
 
     grouped_data['Table Value'] = grouped_data['Recorded'].astype(str) + '/' + grouped_data['Cleaned'].astype(str) + '/' + grouped_data['Total'].astype(str)
 
@@ -73,8 +67,7 @@ def calc_summary(final_table: pd.DataFrame) -> pd.DataFrame:
     return final_table
 
 
-def parse(files: List[str]) -> pd.DataFrame:
-    dataframes = read_data(files)
+def parse(dataframes: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     all_data = concat_tables(dataframes)
     grouped_data = grouping_by_stat(all_data)
     final_table = constrain_dashboard(grouped_data)
