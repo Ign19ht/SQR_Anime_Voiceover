@@ -70,3 +70,9 @@ Leave everything to default
 
 <img src="img/add_2.jpg" width="80%"/>
 <img src="img/add_3.jpg" width="80%"/>
+
+# Update Kanban states
+
+KANBAN_STATES in app/parser.py stores string values ​​describing states in Google Sheets. Update it if the Kanban states have been updated. Order doesn't matter.
+
+VIEW_STATES in app/parser.py stores string values describing what needs to be displayed in a dashboard cell. Order matters. "Total" is necessary.
