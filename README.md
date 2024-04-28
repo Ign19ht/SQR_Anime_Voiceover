@@ -7,7 +7,7 @@ docker build -t drive_reader .
 
 ## run
 ```bash
-docker run -it --rm --env-file .env drive_reader uvicorn app.api:app --host 0.0.0.0 --port 8000
+docker run -it --rm --env-file .env drive_reader streamlit run app.py --server.port=8000 --server.address=0.0.0.0
 ```
 
 <br>
@@ -56,11 +56,7 @@ Leave everything to default
 <img src="img/15.jpg" width="80%"/>
 <img src="img/16.jpg" width="80%"/>
 
-6. Move **.json** key to **secret** folder and update **.env** file
-
-<img src="img/17.jpg" width="80%"/>
-
-Rebuild images to apply changes
+6. Add content of **.json** key to **.env** file as `API_SECRET_KEY` var
 
 <br>
 

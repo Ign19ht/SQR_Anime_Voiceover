@@ -42,6 +42,7 @@ FROM python-base as production
 COPY --from=builder-prod $PYSETUP_PATH $PYSETUP_PATH
 
 COPY ./app /prod/app/
+COPY ./app.py /prod/app.py
 COPY ./docker-entrypoint.sh /prod/docker-entrypoint.sh
 
 RUN chmod +x /prod/docker-entrypoint.sh

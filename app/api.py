@@ -1,5 +1,5 @@
-from drive_loader import DriveReader
-from parser import parse
+from app.drive_loader import DriveReader
+from app.parser import parse
 
 
 def load_data(dir_id: str):

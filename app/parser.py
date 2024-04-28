@@ -5,20 +5,20 @@ import os
 
 class Strings:
     # States
-    NOT_RECORDED = 'Not recorded'
-    RECORDED = 'Recorded'
-    CLEANED = 'Cleaned'
+    NOT_RECORDED = "Not recorded"
+    RECORDED = "Recorded"
+    CLEANED = "Cleaned"
     # Sheet fields
-    NAME = 'name'
-    STATE = 'state'
+    NAME = "name"
+    STATE = "state"
     # New columns strings
-    TABLE = 'table'
-    TOTAL = 'Total'
+    TABLE = "table"
+    TOTAL = "Total"
     # New rows strings
-    EXTRA = 'EXTRA'
-    SUM = 'Sum'
+    EXTRA = "EXTRA"
+    SUM = "Sum"
     # Sup String
-    CELL_VIEW = 'Cell Value'
+    CELL_VIEW = "Cell Value"
 
 
 KANBAN_STATES = [Strings.NOT_RECORDED, Strings.RECORDED, Strings.CLEANED]
@@ -36,15 +36,21 @@ def concat_tables(dataframes: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     all_data = pd.concat(dataframes, ignore_index=True)
 
     # Move all EXTRA characters to one
-    all_data[Strings.NAME] = all_data[Strings.NAME].apply(lambda x: Strings.EXTRA if Strings.EXTRA in x else x)
+    all_data[Strings.NAME] = all_data[Strings.NAME].apply(
+        lambda x: Strings.EXTRA if Strings.EXTRA in x else x
+    )
 
     return all_data
 
 
 # Grouping for next calculations
 def grouping_by_stat(all_data: pd.DataFrame) -> pd.DataFrame:
-    grouped_data = all_data.groupby([Strings.NAME, Strings.TABLE, Strings.STATE]).size().\
-        unstack(fill_value=0).reset_index()
+    grouped_data = (
+        all_data.groupby([Strings.NAME, Strings.TABLE, Strings.STATE])
+        .size()
+        .unstack(fill_value=0)
+        .reset_index()
+    )
 
     # Add missing columns
     for state in KANBAN_STATES:
@@ -60,8 +66,12 @@ def constrain_dashboard(grouped_data: pd.DataFrame) -> pd.DataFrame:
     grouped_data[Strings.TOTAL] = grouped_data[KANBAN_STATES].sum(axis=1)
 
     # Format cell with VIEW_STATES
-    grouped_data[Strings.CELL_VIEW] = grouped_data[VIEW_STATES].astype(str).apply('/'.join, axis=1)
-    final_table = grouped_data.pivot(index=Strings.NAME, columns=Strings.TABLE, values=Strings.CELL_VIEW)
+    grouped_data[Strings.CELL_VIEW] = (
+        grouped_data[VIEW_STATES].astype(str).apply("/".join, axis=1)
+    )
+    final_table = grouped_data.pivot(
+        index=Strings.NAME, columns=Strings.TABLE, values=Strings.CELL_VIEW
+    )
 
     final_table.reset_index(inplace=True)
 
@@ -71,9 +81,12 @@ def constrain_dashboard(grouped_data: pd.DataFrame) -> pd.DataFrame:
 # Calculate total for each character
 def calc_total(final_table: pd.DataFrame) -> pd.DataFrame:
     total_column = final_table.apply(
-        lambda row: sum(int(x.split('/')[VIEW_STATES.index(Strings.TOTAL)])
-                        for x in row.drop(Strings.NAME) if isinstance(x, str)),
-        axis=1
+        lambda row: sum(
+            int(x.split("/")[VIEW_STATES.index(Strings.TOTAL)])
+            for x in row.drop(Strings.NAME)
+            if isinstance(x, str)
+        ),
+        axis=1,
     )
     final_table[Strings.TOTAL] = total_column
 
@@ -83,17 +96,20 @@ def calc_total(final_table: pd.DataFrame) -> pd.DataFrame:
 # Calculate total for each episode
 def calc_summary(final_table: pd.DataFrame) -> pd.DataFrame:
     # Fill all NaN cells with necessary format
-    final_table.fillna('/'.join('0' for _ in range(len(VIEW_STATES))), inplace=True)
+    final_table.fillna("/".join("0" for _ in range(len(VIEW_STATES))), inplace=True)
 
     # Calculate total for each episode
-    totals = final_table.drop(Strings.TOTAL, axis=1).drop(Strings.NAME, axis=1) \
-        .apply(lambda col: col.str.rsplit('/', expand=True).astype(int).sum()). \
-        apply(lambda row: '/'.join(str(val) for val in row))
+    totals = (
+        final_table.drop(Strings.TOTAL, axis=1)
+        .drop(Strings.NAME, axis=1)
+        .apply(lambda col: col.str.rsplit("/", expand=True).astype(int).sum())
+        .apply(lambda row: "/".join(str(val) for val in row))
+    )
 
     # Calculate total for Total column and merge
     total_summary = pd.Series(
         totals.tolist() + [final_table[Strings.TOTAL].sum()],
-        index=totals.index.tolist() + [Strings.TOTAL]
+        index=totals.index.tolist() + [Strings.TOTAL],
     )
 
     # Insert into final table
