@@ -1,20 +1,51 @@
-FROM python:3.11-alpine
+###############################################
+# Base Image
+###############################################
+FROM python:3.11-slim as python-base
 
-# Install curl and other dependencies
-RUN apk update && \
-    apk add --no-cache curl py-pip
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    PIP_DEFAULT_TIMEOUT=100 \
+    POETRY_VERSION=1.7.1 \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_IN_PROJECT=true \
+    POETRY_NO_INTERACTION=1 \
+    PYSETUP_PATH="/opt/pysetup" \
+    VENV_PATH="/opt/pysetup/.venv"
 
-# # Install Poetry
-RUN pip install poetry
+ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
+###############################################
+# Builder Image
+###############################################
+FROM python-base as builder-base
 
-WORKDIR /app
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+    curl \
+    build-essential
 
-COPY pyproject.toml .
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
-RUN poetry install
+WORKDIR $PYSETUP_PATH
+COPY poetry.lock pyproject.toml ./
 
-COPY secrets/ secrets/
-COPY scripts/ scripts/
+FROM builder-base as builder-prod
 
-# Set a default command
-CMD ["poetry", "run", "python", "scripts/main.py"]
+RUN poetry install --no-dev
+
+###############################################
+# Production Image
+###############################################
+FROM python-base as production
+COPY --from=builder-prod $PYSETUP_PATH $PYSETUP_PATH
+
+COPY ./app /prod/app/
+COPY ./docker-entrypoint.sh /prod/docker-entrypoint.sh
+
+RUN chmod +x /prod/docker-entrypoint.sh
+
+WORKDIR /prod
+
+ENTRYPOINT ./docker-entrypoint.sh $0 $@
