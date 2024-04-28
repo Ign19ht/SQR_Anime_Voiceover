@@ -5,12 +5,12 @@ import pandas as pd
 import io
 import os
 
-
 # Scope for reading (and optionally writing) files
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 TOKEN_FILE = os.getenv("TOKEN_FILE")
 CLIENT_API_SECRET = os.getenv("CLIENT_API_SECRET")
+
 
 class DriveReader:
     def __init__(self) -> None:
@@ -18,9 +18,10 @@ class DriveReader:
 
     def __authenticate(self):
         script_directory = os.path.dirname(os.path.abspath(__file__))
-        creds = service_account.Credentials.from_service_account_file( os.path.join(script_directory, CLIENT_API_SECRET), scopes=SCOPES )
+        creds = service_account.Credentials.from_service_account_file(os.path.join(script_directory, CLIENT_API_SECRET),
+                                                                      scopes=SCOPES)
         return build('drive', 'v3', credentials=creds)
-    
+
     def read_transcripts(self, folder_id):
         query = f"'{folder_id}' in parents and mimeType != 'application/vnd.google-apps.folder' and trashed = false"
         results = self.service.files().list(
@@ -45,5 +46,3 @@ class DriveReader:
                 file_dict[item['name']] = df
 
         return file_dict
-
-

@@ -15,6 +15,8 @@ google-api-python-client = "^2.127.0"
 google-auth-httplib2 = "^0.2.0"
 google-auth-oauthlib = "^1.2.0"
 openpyxl = "^3.1.2"
+streamlit = "^1.33.0"
+selenium = "^4.9.0"
 
 [build-system]
 requires = ["poetry-core"]
